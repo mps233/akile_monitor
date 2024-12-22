@@ -3,15 +3,16 @@ package main
 import (
 	"akile_monitor/client/model"
 	"fmt"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/load"
-	"github.com/shirou/gopsutil/v3/mem"
-	"github.com/shirou/gopsutil/v3/net"
 	"log"
 	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v3/mem"
+	psnet "github.com/shirou/gopsutil/v3/net"
 )
 
 func GetState() *model.HostState {
@@ -103,7 +104,7 @@ var (
 // TrackNetworkSpeed NIC监控，统计流量与速度
 func TrackNetworkSpeed() {
 	var innerNetInTransfer, innerNetOutTransfer uint64
-	nc, err := net.IOCounters(true)
+	nc, err := psnet.IOCounters(true)
 	if err == nil {
 		for _, v := range nc {
 			if v.Name == cfg.NetName {
