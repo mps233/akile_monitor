@@ -4,6 +4,7 @@ import (
 	"akile_monitor/client/model"
 	"fmt"
 	"log"
+	"net"
 	"runtime"
 	"strconv"
 	"time"
@@ -93,6 +94,30 @@ func GetHost() *model.Host {
 
 	ret.MemTotal = vm.Total
 	ret.SwapTotal = swap.Total
+
+	// 获取所有非回环IP地址
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Println("net.Interfaces error:", err)
+	} else {
+		for _, i := range interfaces {
+			addrs, err := i.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, addr := range addrs {
+				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ipnet.IP.To4() != nil {
+						ret.IP = append(ret.IP, ipnet.IP.String())
+					}
+				}
+			}
+		}
+	}
+
+	// 添加调试日志
+	log.Printf("获取到的IP地址: %v", ret.IP)
+
 	return &ret
 
 }
