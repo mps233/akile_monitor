@@ -95,28 +95,51 @@ func GetHost() *model.Host {
 	ret.MemTotal = vm.Total
 	ret.SwapTotal = swap.Total
 
-	// 获取所有非回环IP地址
+	// 获取所有网络接口
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Println("net.Interfaces error:", err)
+		log.Println("获取网络接口失败:", err)
 	} else {
+		log.Printf("找到 %d 个网络接口", len(interfaces))
+
 		for _, i := range interfaces {
+			log.Printf("检查网络接口: %s", i.Name)
+
 			addrs, err := i.Addrs()
 			if err != nil {
+				log.Printf("获取接口 %s 的地址失败: %v", i.Name, err)
 				continue
 			}
+
+			log.Printf("接口 %s 有 %d 个地址", i.Name, len(addrs))
+
 			for _, addr := range addrs {
-				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-					if ipnet.IP.To4() != nil {
-						ret.IP = append(ret.IP, ipnet.IP.String())
+				log.Printf("处理地址: %v", addr.String())
+
+				if ipnet, ok := addr.(*net.IPNet); ok {
+					if ipnet.IP.IsLoopback() {
+						log.Printf("跳过回环地址: %v", ipnet.IP)
+						continue
 					}
+
+					if ipnet.IP.To4() != nil {
+						log.Printf("找到有效的IPv4地址: %v", ipnet.IP)
+						ret.IP = append(ret.IP, ipnet.IP.String())
+					} else {
+						log.Printf("跳过非IPv4地址: %v", ipnet.IP)
+					}
+				} else {
+					log.Printf("地址类型转换失败: %T", addr)
 				}
 			}
 		}
 	}
 
-	// 添加调试日志
-	log.Printf("获取到的IP地址: %v", ret.IP)
+	if len(ret.IP) == 0 {
+		log.Println("警告: 未找到任何有效的IP地址")
+	} else {
+		log.Printf("最终获取到的IP地址列表: %v", ret.IP)
+	}
 
 	return &ret
 
